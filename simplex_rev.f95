@@ -5,9 +5,12 @@ function gauss(constraints, GCM) result(y)
     REAL, DIMENSION(:,:) :: GCM
     REAL, DIMENSION(constraints) :: y
     INTEGER :: counter
-do i=1 , constraints+1
+    REAL :: lol
+    print*,
+do i=1 , constraints
         print*, GCM(i,:)
     end do
+    print*,
 
     !! GAUSS STUFF
     do i=1,constraints -1
@@ -24,6 +27,7 @@ do i=1 , constraints+1
             end do
             print*, "mu;t"
             xmult  = GCM(k,i) / GCM(i,i)
+            print*, xmult
             GCM(k,i) = 0
             do j=i+1,constraints + 1
                 print*,k, j, i, GCM(k,j)," - ", xmult," * " ,GCM(i,j)
@@ -43,6 +47,7 @@ do i=1 , constraints+1
             do j=i+1, constraints
             lol = lol - GCM(i,j) * y(j)
             end do
+            print*, "lol" , lol
             y(i) = lol/GCM(i,i)
         print*,
     end do
@@ -71,11 +76,13 @@ PROGRAM SIMPLEX_REV
     REAL, dimension(:), allocatable :: t_buffer
     REAL, dimension(:), allocatable :: b_x_d_buffer
     INTEGER :: index
+    INTEGER :: iteration
     !!GET INPUT
     print*, "enter number of variables and constraints"
-    read(*,*) variables, constraints
+    !read(*,*) variables, constraints
     print *, variables, constraints
-
+    variables = 3
+    constraints = 3
     !!SETUP
     !!ALLOCATE EINGANGSDATEN
     allocate(function_array(1:variables), stat = status)
@@ -97,10 +104,15 @@ PROGRAM SIMPLEX_REV
 
     !START ACTUAL PROGRAM
     print*, "please enter function to maximize"
-    read(*,*) function_array 
+    !read(*,*) function_array 
     print*, "please enter constraints"
-    read(*,*) A(:,1:variables + 1)
+    !read(*,*) A(:,1:variables + 1)
 
+    function_array = [3,4,4]
+    A(:,1) = [1, 2, 2]
+    A(:,2) = [2, 0, 3]
+    A(:,3) = [2, 2, 3]
+    A(:,4) = [4, 5, 8]
     !!SETUP A_B, b and c_T
     b = A(:,variables + 1)
 
@@ -122,10 +134,13 @@ PROGRAM SIMPLEX_REV
     end do
     print*, "b:",b
     print*, "c_T",c_T
-
-    print*, "Starting iteration n"
+    iteration = 0
+    do
+    if (iteration == 9) CALL EXIT()
+    iteration = iteration + 1
+    print*, "------Starting iteration--------" , iteration
     yT_x_B =0
-    yT_x_B(:,1:constraints) = A(:,variables + 1:)
+    yT_x_B(:,1:constraints) = transpose(A(:,variables + 1:))
     yT_x_B(:,constraints + 1) = c_T(variables + 1:)
     print*, "yT_x_B"
     do i = 1, constraints
@@ -141,7 +156,14 @@ PROGRAM SIMPLEX_REV
     end do
     print*, "v_yT_x_ai"
     print*, v_yT_x_ai
-    current_entry_variable_index = minloc(v_yT_x_ai, 1)
+    v_yT_x_ai = c_T(1:variables) - v_yT_x_ai
+    print*, v_yT_x_ai
+    if(maxval(v_yT_x_ai) < 0) then
+        print*,"RESULT: " ,b
+        print*, c_T
+        CALL EXIT()
+    end if
+    current_entry_variable_index = maxloc(v_yT_x_ai, INTEGER)
     print*,current_entry_variable_index
 
     B_x_d(:,1:constraints) = A(:,variables+1:)
@@ -155,12 +177,19 @@ PROGRAM SIMPLEX_REV
     print*, "d"
     print*, d
 
-    do i = 1 , constraints 
+    do i = 1 , constraints
+        if(d(i) /= 0.0) then
         t_buffer(i) = b(i)/d(i)
-    end do
+        else
+            t_buffer(i) = 0
+        end if
+        end do
     print*, "t_buffer"
     print*, t_buffer
-    
+    print*, 
+   
+    print*, b
+
     do i = 1 , constraints
         current_exit_variable_index = maxloc(t_buffer, INTEGER)
         b_x_d_buffer = b - t_buffer(current_exit_variable_index) * d
@@ -181,6 +210,14 @@ PROGRAM SIMPLEX_REV
    do i = 1, variables
     print*, A(i,:)
     end do
+    test = c_T(current_entry_variable_index)
+    print*, "test", test
+    c_T(current_entry_variable_index) = c_T(current_exit_variable_index + variables)
+    c_T(current_exit_variable_index + variables) = test
+    print*,
+    print*, c_T
+    b = b_x_d_buffer
+        end do
  !constraints_matrix(1,1) = -1
     !constraints_matrix(1,2) = 1
     !constraints_matrix(1,3) = 2
