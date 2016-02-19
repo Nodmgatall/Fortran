@@ -108,19 +108,19 @@ PROGRAM SIMPLEX_REV
     print*, "please enter constraints"
     !read(*,*) A(:,1:variables + 1)
 
-    !!TEST 3, RESULT SHOULD BE:  x1 = 0, x2 = 2.2, x3 = 1.6 z = =0,6
+    !!TEST 3, RESULT SHOULD BE:  x1 = 0, x2 = 2.2, x3 = 1.6 z = =0,6 / DOES NOT WORK -> ENDLESS LOOP
 
-    function_array = [1, -1, 1]
-    A(1,:) = [2, -1, 2, 4]
-    A(2,:) = [2, -3, 1, -5]
-    A(3,:) = [-1, 1, -2, -1]
+    !function_array = [1, -1, 1]
+    !A(1,:) = [2, -1, 2, 4]
+    !A(2,:) = [2, -3, 1, -5]
+    !A(3,:) = [-1, 1, -2, -1]
     
     
     !!TEST 2, RESULT SHOULD BE: x3 = 10000, z = 10000 / WORKS
-    !function_array = [100, 10, 1]
-    !A(1,:) = [1, 0 ,0, 1]
-    !A(2,:) = [20, 1, 0, 100]
-    !A(3,:) = [200, 20, 1 , 10000]
+    function_array = [100, 10, 1]
+    A(1,:) = [1, 0 ,0, 1]
+    A(2,:) = [20, 1, 0, 100]
+    A(3,:) = [200, 20, 1 , 10000]
 
     !!TEST 1 RESULT SHOULD BE x1 = 2 x3 = 1 z = 13 / WORKS
     !function_array = [5,4,3]
@@ -150,8 +150,8 @@ PROGRAM SIMPLEX_REV
     print*, "b:",b
     print*, "c_T",c_T
     iteration = 0
-    do
-    if (iteration == 5) CALL EXIT()
+    mainloop: do
+    if (iteration == 20) CALL EXIT()
     iteration = iteration + 1
     print*, "------Starting iteration--------" , iteration
     yT_x_B =0
@@ -184,8 +184,9 @@ PROGRAM SIMPLEX_REV
         max_value = max_value + (function_array(variable_indices(i + variables)) * b(i))
         end if
         end do
-        print*, "max = ", max_value 
-        CALL EXIT()
+        print*, "max = ", max_value
+        print*,"Done with", iteration, "Iterations"
+        exit mainloop
     end if
     current_entry_variable_index = maxloc(v_yT_x_ai, INTEGER)
     print*,current_entry_variable_index
@@ -244,55 +245,8 @@ PROGRAM SIMPLEX_REV
     print*,
     print*, c_T
     b = b_x_d_buffer
-        end do
-    print*, "Results:"
-    print*,
-    print*, variable_indices
-    print*, c_T
-    !constraints_matrix(1,1) = -1
-    !constraints_matrix(1,2) = 1
-    !constraints_matrix(1,3) = 2
-    !constraints_matrix(1,4) = 3
-    !constraints_matrix(2,1) = 1
-    !constraints_matrix(2,2) = -2
-    !constraints_matrix(2,3) = -3
-    !constraints_matrix(2,4) = 0
-    !constraints_matrix(3,1) = 0
-    !constraints_matrix(3,2) = 2
-    !constraints_matrix(3,3) = 1
-    !constraints_matrix(3,4) = -8
-
-    
-   ! constraints_matrix(1,1) = 2
-   ! constraints_matrix(1,2) = 0
-   ! constraints_matrix(1,3) = 0
-   ! constraints_matrix(1,4) = 5
-   ! constraints_matrix(2,1) = 4
-   ! constraints_matrix(2,2) = 1
-   ! constraints_matrix(2,3) = 0
-   ! constraints_matrix(2,4) = 0
-   ! constraints_matrix(3,1) = 3
-   ! constraints_matrix(3,2) = 0
-   ! constraints_matrix(3,3) = 1
-   ! constraints_matrix(3,4) = 0
-   ! y = gauss(constraints,constraints_matrix)
-
-    print*,"y"
-    !print*,y
-!! GAUSS STUFF END
-!! start deciding which row will be a
-    !for all row do y*row
-    !do i = 1, variables
-    !a_v(1) = y(1)
-    !print*, i
-    !print*, constraints_matrix(:,i)
-    !print*, DOT_PRODUCT(y , constraints_matrix(:,i))
-    !end do
-    !save result
-    !lol = c_a - result
-    !take biggest numbe from lol that is bigger 0
-    !if there is none we are done
-
+    end do mainloop
+        
     deallocate(function_array, stat = status)
     deallocate(A, stat = status)
     deallocate(b, stat = status)
@@ -302,6 +256,9 @@ PROGRAM SIMPLEX_REV
     deallocate(v_yT_x_ai, stat = status)
     deallocate(B_x_d, stat = status)
     deallocate(d, stat = status)
+    deallocate(variable_indices, stat = status)
+    deallocate(t_buffer, stat = status)
+    deallocate(b_x_d_buffer, stat = status)
     
     
     
