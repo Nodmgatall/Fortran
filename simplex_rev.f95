@@ -66,7 +66,7 @@ PROGRAM SIMPLEX_REV
     REAL,dimension(:,:), allocatable :: A
     REAL,dimension(:), allocatable :: b
     REAL,dimension(:), allocatable :: c_T
-    REAL,dimension(:), allocatable :: variable_indices
+    INTEGER,dimension(:), allocatable :: variable_indices
     !!OTHER STUFF
     REAL, dimension(:,:), allocatable :: yT_x_B
     REAL, dimension(:,:), allocatable :: B_x_d
@@ -108,11 +108,26 @@ PROGRAM SIMPLEX_REV
     print*, "please enter constraints"
     !read(*,*) A(:,1:variables + 1)
 
-    function_array = [3,4,4]
-    A(:,1) = [1, 2, 2]
-    A(:,2) = [2, 0, 3]
-    A(:,3) = [2, 2, 3]
-    A(:,4) = [4, 5, 8]
+    !!TEST 3, RESULT SHOULD BE:  x1 = 0, x2 = 2.2, x3 = 1.6 z = =0,6
+
+    function_array = [1, -1, 1]
+    A(1,:) = [2, -1, 2, 4]
+    A(2,:) = [2, -3, 1, -5]
+    A(3,:) = [-1, 1, -2, -1]
+    
+    
+    !!TEST 2, RESULT SHOULD BE: x3 = 10000, z = 10000 / WORKS
+    !function_array = [100, 10, 1]
+    !A(1,:) = [1, 0 ,0, 1]
+    !A(2,:) = [20, 1, 0, 100]
+    !A(3,:) = [200, 20, 1 , 10000]
+
+    !!TEST 1 RESULT SHOULD BE x1 = 2 x3 = 1 z = 13 / WORKS
+    !function_array = [5,4,3]
+    !A(:,1) = [2, 4, 3]
+    !A(:,2) = [3, 1, 4]
+    !A(:,3) = [1, 2, 2]
+    !A(:,4) = [5, 11, 8]
     !!SETUP A_B, b and c_T
     b = A(:,variables + 1)
 
@@ -136,7 +151,7 @@ PROGRAM SIMPLEX_REV
     print*, "c_T",c_T
     iteration = 0
     do
-    if (iteration == 9) CALL EXIT()
+    if (iteration == 5) CALL EXIT()
     iteration = iteration + 1
     print*, "------Starting iteration--------" , iteration
     yT_x_B =0
@@ -159,8 +174,17 @@ PROGRAM SIMPLEX_REV
     v_yT_x_ai = c_T(1:variables) - v_yT_x_ai
     print*, v_yT_x_ai
     if(maxval(v_yT_x_ai) < 0) then
-        print*,"RESULT: " ,b
+        print*,"RESULT: "
+        print*, b
         print*, c_T
+        print*, variable_indices
+        max_value = 0
+        do i = 1 , constraints
+        if(variable_indices(i + variables) <= variables) then
+        max_value = max_value + (function_array(variable_indices(i + variables)) * b(i))
+        end if
+        end do
+        print*, "max = ", max_value 
         CALL EXIT()
     end if
     current_entry_variable_index = maxloc(v_yT_x_ai, INTEGER)
@@ -214,11 +238,18 @@ PROGRAM SIMPLEX_REV
     print*, "test", test
     c_T(current_entry_variable_index) = c_T(current_exit_variable_index + variables)
     c_T(current_exit_variable_index + variables) = test
+    test = variable_indices(current_entry_variable_index)
+    variable_indices(current_entry_variable_index) = variable_indices(current_exit_variable_index + variables)
+    variable_indices(current_exit_variable_index + variables) = test
     print*,
     print*, c_T
     b = b_x_d_buffer
         end do
- !constraints_matrix(1,1) = -1
+    print*, "Results:"
+    print*,
+    print*, variable_indices
+    print*, c_T
+    !constraints_matrix(1,1) = -1
     !constraints_matrix(1,2) = 1
     !constraints_matrix(1,3) = 2
     !constraints_matrix(1,4) = 3
